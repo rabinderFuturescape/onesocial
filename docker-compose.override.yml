@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postiz-production:
+    image: ghcr.io/gitroomhq/postiz-app:latest
+    volumes:
+      - ./apps/backend/src/services/auth/providers/onesso.provider.ts:/app/apps/backend/src/services/auth/providers/onesso.provider.ts
+      - ./apps/backend/src/services/auth/providers/providers.factory.ts:/app/apps/backend/src/services/auth/providers/providers.factory.ts
+    environment:
+      - ONESSO_BASE_URL=http://keycloak:8080
+      - ONESSO_REALM=postiz-realm
+      - ONESSO_CLIENT_ID=postiz-client
+      - ONESSO_CLIENT_SECRET=changeme
+      - ONESSO_REDIRECT_URI=http://localhost:3000/auth/onesso/callback
+    networks:
+      - postiz-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postiz-postgres:5432/postiz-db-local
+      - KC_DB_USERNAME=postiz-local
+      - KC_DB_PASSWORD=postiz-local-pwd
+    ports:
+      - "8080:8080"
+    command:
+      - start-dev
+    networks:
+      - postiz-network
+    depends_on:
+      - postiz-postgres
+
+networks:
+  postiz-network:
+    external: true

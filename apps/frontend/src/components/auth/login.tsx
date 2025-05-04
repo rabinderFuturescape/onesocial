@@ -14,6 +14,7 @@ import { GoogleProvider } from '@gitroom/frontend/components/auth/providers/goog
 import { useVariables } from '@gitroom/react/helpers/variable.context';
 import { FarcasterProvider } from '@gitroom/frontend/components/auth/providers/farcaster.provider';
 import WalletProvider from '@gitroom/frontend/components/auth/providers/wallet.provider';
+import { OnessoProvider } from '@gitroom/frontend/components/auth/providers/onesso.provider';
 
 type Inputs = {
   email: string;
@@ -71,6 +72,7 @@ export function Login() {
             <GoogleProvider />
             {!!neynarClientId && <FarcasterProvider />}
             {billingEnabled && <WalletProvider />}
+            <OnessoProvider />
           </div>
         )}
         <div className="h-[20px] mb-[24px] mt-[24px] relative">

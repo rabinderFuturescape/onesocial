@@ -19,6 +19,7 @@ import { useVariables } from '@gitroom/react/helpers/variable.context';
 import { useTrack } from '@gitroom/react/helpers/use.track';
 import { TrackEnum } from '@gitroom/nestjs-libraries/user/track.enum';
 import { FarcasterProvider } from '@gitroom/frontend/components/auth/providers/farcaster.provider';
+import { OnessoProvider } from '@gitroom/frontend/components/auth/providers/onesso.provider';
 import dynamic from 'next/dynamic';
 import { WalletUiProvider } from '@gitroom/frontend/components/auth/providers/placeholder/wallet.ui.provider';
 const WalletProvider = dynamic(
@@ -166,6 +167,7 @@ export function RegisterAfter({
               <GoogleProvider />
               {!!neynarClientId && <FarcasterProvider />}
               {billingEnabled && <WalletProvider />}
+              <OnessoProvider />
             </div>
           ))}
         {!isAfterProvider && (
