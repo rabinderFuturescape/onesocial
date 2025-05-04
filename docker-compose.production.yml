@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  postiz-postgres:
+    image: postgres:17-alpine
+    container_name: postiz-postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postizpass}
+      POSTGRES_USER: ${POSTGRES_USER:-postiz-local}
+      POSTGRES_DB: ${POSTGRES_DB:-postiz-db-local}
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - postiz-network
+
+  postiz-redis:
+    image: redis:7-alpine
+    container_name: postiz-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - postiz-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    restart: always
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD:-changeme}
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=postiz-postgres
+      - KC_DB_USERNAME=${POSTGRES_USER:-postiz-local}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD:-postizpass}
+    ports:
+      - "8080:8080"
+    command:
+      - start-dev
+    networks:
+      - postiz-network
+    depends_on:
+      - postiz-postgres
+
+  postiz-production:
+    image: ghcr.io/gitroomhq/postiz-app:onesso
+    container_name: postiz-production
+    restart: always
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+      - "${BACKEND_PORT:-3001}:3001"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postiz-local}:${POSTGRES_PASSWORD:-postizpass}@postiz-postgres:5432/${POSTGRES_DB:-postiz-db-local}?schema=public
+      - REDIS_URL=redis://postiz-redis:6379
+      - ONESSO_BASE_URL=http://keycloak:8080
+      - ONESSO_REALM=postiz-realm
+      - ONESSO_CLIENT_ID=postiz-client
+      - ONESSO_CLIENT_SECRET=changeme
+      - ONESSO_REDIRECT_URI=${ONESSO_REDIRECT_URI:-https://your.domain.com/auth/onesso/callback}
+    networks:
+      - postiz-network
+    depends_on:
+      - postiz-postgres
+      - postiz-redis
+      - keycloak
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres-volume:
+    external: false
+
+networks:
+  postiz-network:
+    external: false
