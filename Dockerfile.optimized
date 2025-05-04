@@ -1,0 +1,133 @@
+# Optimized Dockerfile for Postiz
+# Uses multi-stage builds with better caching
+
+ARG NODE_VERSION="20.17"
+
+# Base image with common dependencies
+FROM docker.io/node:${NODE_VERSION}-alpine3.19 AS base
+
+# Reduce noise in logs
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install system dependencies
+RUN apk add --no-cache \
+    caddy \
+    bash=5.2.21-r0 \
+    supervisor=4.2.5-r4
+
+WORKDIR /app
+
+# Dependencies stage - focus on caching node_modules
+FROM base AS deps
+
+# Install build dependencies needed for native modules
+RUN apk add --no-cache \
+    pkgconfig \
+    gcc \
+    pixman-dev \
+    cairo-dev \
+    pango-dev \
+    make \
+    build-base
+
+# Copy only package files first to leverage cache
+COPY package.json package-lock.json ./
+
+# Install dependencies with cache mount for faster builds
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-fund --prefer-offline --no-audit
+
+# Builder stage for frontend
+FROM deps AS builder-frontend
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY nx.json tsconfig.base.json build.plugins.js ./
+COPY apps/frontend ./apps/frontend
+COPY libraries ./libraries
+RUN npx nx run frontend:build:production
+
+# Builder stage for backend
+FROM deps AS builder-backend
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY nx.json tsconfig.base.json build.plugins.js ./
+COPY apps/backend ./apps/backend
+COPY libraries ./libraries
+RUN npx nx run backend:build:production
+
+# Builder stage for workers
+FROM deps AS builder-workers
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY nx.json tsconfig.base.json build.plugins.js ./
+COPY apps/workers ./apps/workers
+COPY libraries ./libraries
+RUN npx nx run workers:build:production
+
+# Builder stage for cron
+FROM deps AS builder-cron
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY nx.json tsconfig.base.json build.plugins.js ./
+COPY apps/cron ./apps/cron
+COPY libraries ./libraries
+RUN npx nx run cron:build:production
+
+# Production image
+FROM base AS production
+WORKDIR /app
+
+# Copy built artifacts from all builder stages
+COPY --from=builder-frontend /app/dist/apps/frontend ./dist/apps/frontend
+COPY --from=builder-backend /app/dist/apps/backend ./dist/apps/backend
+COPY --from=builder-workers /app/dist/apps/workers ./dist/apps/workers
+COPY --from=builder-cron /app/dist/apps/cron ./dist/apps/cron
+
+# Copy node_modules (only production dependencies)
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy required files for Prisma
+COPY --from=deps /app/libraries/nestjs-libraries/src/database/prisma ./libraries/nestjs-libraries/src/database/prisma
+
+# Copy configuration files
+COPY package.json nx.json ./
+COPY var/docker/entrypoint.sh /app/entrypoint.sh
+COPY var/docker/supervisord.conf /etc/supervisord.conf
+COPY var/docker/supervisord /app/supervisord_available_configs/
+COPY var/docker/Caddyfile /app/Caddyfile
+COPY .env.example /config/postiz.env
+
+# Set up volumes and expose ports
+VOLUME /config
+VOLUME /uploads
+EXPOSE 3000
+EXPOSE 4200
+EXPOSE 5000
+
+# Set labels
+LABEL org.opencontainers.image.source=https://github.com/gitroomhq/postiz-app
+LABEL org.opencontainers.image.title="Postiz App (Production)"
+
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Development image (for devcontainer)
+FROM deps AS development
+WORKDIR /app
+
+# Copy all source files
+COPY . .
+
+# Set up volumes and expose ports
+VOLUME /config
+VOLUME /uploads
+EXPOSE 3000
+EXPOSE 4200
+EXPOSE 5000
+
+# Set labels
+LABEL org.opencontainers.image.title="Postiz App (Development)"
+
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]

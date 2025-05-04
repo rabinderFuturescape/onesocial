@@ -1,0 +1,68 @@
+# Cached Dockerfile for Postiz
+# Focuses on maximum caching and minimal build time
+
+ARG NODE_VERSION="20.17"
+
+# Base image with common dependencies
+FROM docker.io/node:${NODE_VERSION}-alpine3.19 AS base
+
+# Reduce noise in logs
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=development
+
+# Install system dependencies
+RUN apk add --no-cache \
+    caddy \
+    bash \
+    supervisor
+
+WORKDIR /app
+
+# Dependencies stage - focus on caching node_modules
+FROM base AS deps
+
+# Install build dependencies needed for native modules
+RUN apk add --no-cache \
+    pkgconfig \
+    gcc \
+    pixman-dev \
+    cairo-dev \
+    pango-dev \
+    make \
+    build-base
+
+# Copy only package files first to leverage cache
+COPY package.json package-lock.json ./
+
+# Install dependencies with maximum caching
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit
+
+# Development image with source code
+FROM deps AS development
+
+# Copy configuration files
+COPY nx.json tsconfig.base.json build.plugins.js ./
+COPY var/docker/entrypoint.sh /app/entrypoint.sh
+COPY var/docker/supervisord.conf /etc/supervisord.conf
+COPY var/docker/supervisord /app/supervisord_available_configs/
+COPY var/docker/Caddyfile /app/Caddyfile
+COPY .env.example /config/postiz.env
+
+# Copy source code
+COPY apps ./apps
+COPY libraries ./libraries
+
+# Set up volumes and expose ports
+VOLUME /config
+VOLUME /uploads
+EXPOSE 3000
+EXPOSE 4200
+EXPOSE 5000
+
+# Set labels
+LABEL org.opencontainers.image.title="Postiz App (Development)"
+
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]

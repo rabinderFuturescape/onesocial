@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postiz-postgres:
+    image: postgres:17-alpine
+    container_name: postiz-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postiz-local}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postiz-local-pwd}
+      POSTGRES_DB: ${POSTGRES_DB:-postiz-db-local}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postiz-local}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - postiz-network
+
+  # Redis cache
+  postiz-redis:
+    image: redis:7-alpine
+    container_name: postiz-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - postiz-network
+
+  # Redis Insight (Redis management UI)
+  postiz-redisinsight:
+    image: redis/redisinsight:latest
+    container_name: postiz-redisinsight
+    restart: always
+    ports:
+      - "5540:5540"
+    networks:
+      - postiz-network
+
+  # pgAdmin (PostgreSQL management UI)
+  postiz-pg-admin:
+    image: dpage/pgadmin4:latest
+    container_name: postiz-pg-admin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "8081:80"
+    networks:
+      - postiz-network
+
+  # Development container with source code mounted as volume
+  postiz-dev:
+    image: postiz-dev:latest
+    container_name: postiz-dev
+    restart: always
+    depends_on:
+      postiz-postgres:
+        condition: service_healthy
+      postiz-redis:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postiz-local}:${POSTGRES_PASSWORD:-postiz-local-pwd}@postiz-postgres:5432/${POSTGRES_DB:-postiz-db-local}
+      - REDIS_URL=redis://postiz-redis:6379
+      - FRONTEND_PORT=4200
+      - BACKEND_PORT=3000
+      - FRONTEND_URL=http://localhost:4200
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:3000
+      - BACKEND_INTERNAL_URL=http://localhost:3000
+      - NODE_ENV=development
+    ports:
+      - "4200:4200"
+      - "3000:3000"
+    volumes:
+      - ./.env:/config/postiz.env
+      - ./uploads:/uploads
+      # Mount source code for development
+      - ./apps:/app/apps
+      - ./libraries:/app/libraries
+    command: >
+      sh -c "npm run dev"
+    networks:
+      - postiz-network
+
+networks:
+  postiz-network:
+    driver: bridge
+
+volumes:
+  postgres-volume:
+    driver: local
