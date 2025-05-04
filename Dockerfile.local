@@ -1,0 +1,12 @@
+FROM ghcr.io/gitroomhq/postiz-app:latest
+
+# Copy the Onesso provider files
+COPY apps/backend/src/services/auth/providers/onesso.provider.ts /app/apps/backend/src/services/auth/providers/
+COPY apps/backend/src/services/auth/providers/providers.factory.ts /app/apps/backend/src/services/auth/providers/
+
+# Set environment variables for Onesso
+ENV ONESSO_BASE_URL=http://keycloak:8080 \
+    ONESSO_REALM=postiz-realm \
+    ONESSO_CLIENT_ID=postiz-client \
+    ONESSO_CLIENT_SECRET=changeme \
+    ONESSO_REDIRECT_URI=http://localhost:3000/auth/onesso/callback

@@ -29,6 +29,7 @@ enum Provider {
   GOOGLE
   FARCASTER
   WALLET
+  ONESSO
 }
 ```
 
@@ -54,6 +55,7 @@ export interface ProvidersInterface {
 | `GoogleProvider` | `apps/backend/src/services/auth/providers/google.provider.ts` | `Provider.GOOGLE` | Google OAuth authentication |
 | `FarcasterProvider` | `apps/backend/src/services/auth/providers/farcaster.provider.ts` | `Provider.FARCASTER` | Farcaster authentication using Neynar API |
 | `WalletProvider` | `apps/backend/src/services/auth/providers/wallet.provider.ts` | `Provider.WALLET` | Cryptocurrency wallet authentication (Solana) |
+| `OnessoProvider` | `apps/backend/src/services/auth/providers/onesso.provider.ts` | `Provider.ONESSO` | Keycloak/OIDC authentication |
 
 The `LOCAL` provider doesn't have a specific implementation class as it's handled directly in the authentication service for username/password authentication.
 
@@ -68,6 +70,7 @@ These components handle the frontend UI for authentication:
 | `FarcasterProvider` | `apps/frontend/src/components/auth/providers/farcaster.provider.tsx` | `Provider.FARCASTER` |
 | `WalletProvider` | `apps/frontend/src/components/auth/providers/wallet.provider.tsx` | `Provider.WALLET` |
 | `WalletUiProvider` | `apps/frontend/src/components/auth/providers/placeholder/wallet.ui.provider.tsx` | UI component for wallet authentication |
+| `OnessoProvider` | `apps/frontend/src/components/auth/providers/onesso.provider.tsx` | `Provider.ONESSO` |
 
 ### Provider Factory
 
@@ -85,6 +88,8 @@ export class ProvidersFactory {
         return new FarcasterProvider();
       case Provider.WALLET:
         return new WalletProvider();
+      case Provider.ONESSO:
+        return new OnessoProvider();
     }
   }
 }

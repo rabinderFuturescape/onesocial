@@ -36,6 +36,48 @@ sequenceDiagram
     end
 ```
 
+## Onesso (Keycloak) Authentication Flow
+
+The following diagram illustrates the authentication flow when using Onesso (Keycloak) as the SSO provider.
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant FrontendComponent as Frontend Component
+    participant BackendAPI as Backend API
+    participant KeycloakServer as Keycloak Server
+    participant Database as Prisma Database
+
+    Browser->>FrontendComponent: Click "Sign in with Onesso"
+    FrontendComponent->>BackendAPI: GET /auth/oauth/ONESSO
+    BackendAPI->>Browser: Return Keycloak authorization URL
+    Browser->>KeycloakServer: Redirect to Keycloak login page
+    KeycloakServer->>Browser: Display login form
+    Browser->>KeycloakServer: Submit credentials
+    KeycloakServer->>Browser: Redirect to callback URL with auth code
+    Browser->>FrontendComponent: Load callback page with code
+    FrontendComponent->>BackendAPI: POST /auth/oauth/ONESSO/exists with code
+    BackendAPI->>KeycloakServer: Exchange code for token
+    KeycloakServer->>BackendAPI: Return access token
+    BackendAPI->>KeycloakServer: Request user info with token
+    KeycloakServer->>BackendAPI: Return user info (email, id)
+    alt User exists
+        BackendAPI->>Database: Find user by provider ID
+        Database->>BackendAPI: Return user
+        BackendAPI->>BackendAPI: Generate JWT
+        BackendAPI->>Browser: Set auth cookie with JWT
+        Browser->>Browser: Redirect to dashboard
+    else New user
+        BackendAPI->>Browser: Return token for registration
+        Browser->>FrontendComponent: Show registration form
+        FrontendComponent->>BackendAPI: POST /auth/register with token
+        BackendAPI->>Database: Create new user
+        Database->>BackendAPI: Return created user
+        BackendAPI->>Browser: Set auth cookie with JWT
+        Browser->>Browser: Redirect to dashboard
+    end
+```
+
 ## How to View This Diagram
 
 To view this diagram properly:
