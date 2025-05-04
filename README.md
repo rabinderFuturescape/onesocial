@@ -96,6 +96,38 @@
 ## Quick Start
 To have the project up and running, please follow the [Quick Start Guide](https://docs.postiz.com/quickstart)
 
+## Utility Scripts
+
+### Migrate Demo User to Keycloak
+The `scripts/migrate-demo-user.sh` script automates migrating the existing demo user from the Postgres database into Keycloak.
+
+Usage:
+```bash
+# Using default settings
+./scripts/migrate-demo-user.sh
+
+# Using custom settings
+KEYCLOAK_URL="http://localhost:8080" \
+KEYCLOAK_ADMIN_USER="admin" \
+KEYCLOAK_ADMIN_PASSWORD="admin" \
+KEYCLOAK_REALM="postiz-realm" \
+POSTGRES_HOST="localhost" \
+POSTGRES_PORT="5432" \
+POSTGRES_USER="postiz-local" \
+POSTGRES_PASSWORD="postiz-local-pwd" \
+POSTGRES_DB="postiz-db-local" \
+DEMO_USER_EMAIL="demo@exampler.com" \
+DEMO_USER_PASSWORD="demo" \
+./scripts/migrate-demo-user.sh
+```
+
+The script will:
+1. Wait for Keycloak to be healthy
+2. Export the demo user data from Postgres
+3. Create or update the user in Keycloak
+4. Verify the login works
+5. Clean up temporary files
+
 ## Invest in the Postiz Coin :)
 DMsTbeCfX1crgAse5tver98KAMarPWeP3d6U3Gmmpump
 
