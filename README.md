@@ -96,7 +96,15 @@
 ## Quick Start
 To have the project up and running, please follow the [Quick Start Guide](https://docs.postiz.com/quickstart)
 
-## Troubleshooting
+## Documentation
+
+### Authentication
+
+- [Keycloak Integration Guide](docs/keycloak-integration-guide.md): Comprehensive guide for configuring Keycloak
+- [Keycloak Quick Start](docs/keycloak-quickstart.md): Quick start guide for Keycloak integration
+- [Keycloak Authentication Flow](docs/keycloak-auth-flow.md): Visual representation of the authentication flow
+
+### Troubleshooting
 
 If you encounter any issues while setting up or running the project, please refer to the following troubleshooting guides:
 
