@@ -96,6 +96,12 @@
 ## Quick Start
 To have the project up and running, please follow the [Quick Start Guide](https://docs.postiz.com/quickstart)
 
+## Troubleshooting
+
+If you encounter any issues while setting up or running the project, please refer to the following troubleshooting guides:
+
+- [Database Connection Issues](docs/database-connection-troubleshooting.md): Solutions for common database connection problems
+
 ## Utility Scripts
 
 ### Migrate Demo User to Keycloak
@@ -116,7 +122,7 @@ POSTGRES_PORT="5432" \
 POSTGRES_USER="postiz-local" \
 POSTGRES_PASSWORD="postiz-local-pwd" \
 POSTGRES_DB="postiz-db-local" \
-DEMO_USER_EMAIL="demo@exampler.com" \
+DEMO_USER_EMAIL="demo@example.com" \
 DEMO_USER_PASSWORD="demo" \
 ./scripts/migrate-demo-user.sh
 ```
