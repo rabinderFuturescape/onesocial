@@ -7,6 +7,8 @@ This directory contains technical documentation for the Postiz application.
 - [Authentication Flow](./authentication-flow.md) - Detailed documentation of the authentication and page-access flow
 - [Authentication Flow Diagram](./auth-flow-diagram.md) - Visual diagram of the authentication flow
 - [Authentication Providers](./authentication-providers.md) - Comprehensive list of all authentication providers supported by the application
+- [Current Authentication Flow](./current-auth-flow.md) - Detailed documentation of the current authentication flow implementation with Keycloak
+- [Keycloak Authentication Flow](./keycloak-auth-flow.md) - Comprehensive documentation of the Keycloak authentication flow with detailed diagrams and configuration
 
 ## External Documentation
 
